@@ -11,3 +11,6 @@ dimensionality_reduction:
   umap:
     n_components: 2
     random_state: 42
+
+preprocessing:
+  scaler: RobustScaler   # default scaler added
