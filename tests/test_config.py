@@ -2,7 +2,7 @@ import yaml
 from pathlib import Path
 
 def test_config_has_robust_scaler():
-    """Check that config.yaml defines RobustScaler as default scaler."""
+    """Check that config.yaml defines robust as default scaler."""
     config_path = Path("config.yaml")
     assert config_path.exists(), "config.yaml is missing!"
 
@@ -10,4 +10,4 @@ def test_config_has_robust_scaler():
         config = yaml.safe_load(f)
 
     scaler = config.get("preprocessing", {}).get("scaler", None)
-    assert scaler == "RobustScaler", f"Expected RobustScaler, but got {scaler}"
+    assert scaler == "robust", f"Expected robust, but got {scaler}"
