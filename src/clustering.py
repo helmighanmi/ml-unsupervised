@@ -26,3 +26,21 @@ def run_agglomerative(X, n_clusters=3):
     model = AgglomerativeClustering(n_clusters=n_clusters)
     labels = model.fit_predict(X)
     return labels
+
+from sklearn.mixture import GaussianMixture
+from sklearn.cluster import SpectralClustering, Birch
+
+def run_gmm(X, n_components=3, random_state=42):
+    model = GaussianMixture(n_components=n_components, random_state=random_state)
+    labels = model.fit_predict(X)
+    return labels, model
+
+def run_spectral(X, n_clusters=3, random_state=42):
+    model = SpectralClustering(n_clusters=n_clusters, affinity='nearest_neighbors', random_state=random_state)
+    labels = model.fit_predict(X)
+    return labels, model
+
+def run_birch(X, n_clusters=3):
+    model = Birch(n_clusters=n_clusters)
+    labels = model.fit_predict(X)
+    return labels, model
