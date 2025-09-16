@@ -22,7 +22,7 @@ RUN pip install --no-cache-dir -r requirements.txt pytest jupyterlab
 COPY . .
 
 # Run tests to validate build (only in dev/CI image)
-RUN pytest tests --maxfail=1 --disable-warnings -q
+#RUN pytest tests --maxfail=1 --disable-warnings -q
 
 
 # ----------------------

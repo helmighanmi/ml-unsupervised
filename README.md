@@ -84,8 +84,9 @@ This will start Jupyter Notebook at [http://localhost:8888](http://localhost:888
 For convenience, common commands are included in a `Makefile`:
 
 ```bash
-make docker      # Build Docker image
+make docker-dev      # Build Docker image
 make test        # Run tests inside Docker
 make notebook    # Launch Jupyter Notebook (http://localhost:8888)
 make compose     # Start Jupyter with docker-compose
+make run-prod    # Build & run prod
 ```
