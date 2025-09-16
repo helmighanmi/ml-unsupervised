@@ -48,6 +48,10 @@ This repo also includes unsupervised **anomaly detection** methods:
 | **Config Management**    | YAML-based configs with `config.yaml` + loader        | `06_using_config.ipynb`                       |
 | **Anomaly Detection**    | Isolation Forest, One-Class SVM, Local Outlier Factor| `08_anomaly_detection.ipynb`                  |
 
+| **Advanced Clustering**  | Gaussian Mixture Models (GMM), Spectral Clustering, Birch | `09_additional_methods.ipynb` |
+| **Advanced Dimensionality Reduction** | Kernel PCA, ICA, NMF, Factor Analysis | `09_additional_methods.ipynb` |
+
+
 ## 🐳 Run with Docker
 
 You can run this project inside a Docker container for full reproducibility.
