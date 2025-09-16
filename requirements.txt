@@ -1,0 +1,12 @@
+numpy
+pandas
+scikit-learn
+matplotlib
+plotly
+hdbscan
+umap-learn
+pytest
+pytest-cov
+black
+flake8
+isort
