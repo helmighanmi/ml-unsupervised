@@ -1,2 +1,2 @@
 # ml-unsupervised
-end to end application of unsupervised machine learning 
+End to end application of unsupervised machine learning 
