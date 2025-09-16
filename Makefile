@@ -10,8 +10,10 @@ test:
 
 # Run Jupyter notebooks inside Docker
 notebook:
-	docker run -it -p 8888:8888 ml-unsupervised \
-		jupyter notebook --ip=0.0.0.0 --allow-root
+	docker run -it -p 8888:8888 \
+		-v $(PWD):/app \
+		ml-unsupervised \
+		jupyter notebook --ip=0.0.0.0 --port=8888 --no-browser --allow-root
 
 # Run with docker-compose
 compose:
