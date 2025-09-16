@@ -13,4 +13,4 @@ dimensionality_reduction:
     random_state: 42
 
 preprocessing:
-  scaler: RobustScaler   # default scaler added
+  scaler: robust #robust or minmax or standard
