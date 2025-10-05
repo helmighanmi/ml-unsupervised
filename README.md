@@ -90,3 +90,8 @@ make notebook    # Launch Jupyter Notebook (http://localhost:8888)
 make compose     # Start Jupyter with docker-compose
 make run-prod    # Build & run prod
 ```
+
+## Nexts 
+```bash
+Play with real and more comlex datasets. Then add metrics and edge cases of each related datasets.
+```
