@@ -8,3 +8,5 @@ pyyaml
 pytest
 EOL
 hdbscan
+streamlit
+plotly

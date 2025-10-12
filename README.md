@@ -20,6 +20,10 @@ cd ml-unsupervised
 pip install -r requirements.txt
 pytest
 ```
+## Streamlite interface
+```bash
+streamlit run streamlit_app/app.py
+```
 
 ## Notebooks
 - `01_clustering_basics.ipynb`
