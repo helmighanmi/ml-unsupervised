@@ -4,6 +4,7 @@
 [![codecov](https://codecov.io/gh/<your-username>/ml-unsupervised/branch/main/graph/badge.svg)](https://codecov.io/gh/<your-username>/ml-unsupervised)
 
 A clean, professional repository for **clustering, dimensionality reduction, evaluation, and pipelines** in scikit-learn + Plotly + Streamlit.
+![Alt text](images/web-interface-streamlit.PNG)
 
 ## Features
 - ✅ Clustering: KMeans, DBSCAN, HDBSCAN, Agglomerative
