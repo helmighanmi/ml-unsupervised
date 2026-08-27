@@ -1,0 +1,22 @@
+# Path: docker-compose.yml
+# Author: GHANMI Helmi
+# Current Role: AI Engineer
+# Past Role: Researcher in Applied Mathematics
+# Research Profile: https://www.researchgate.net/profile/Ghanmi-Helmi
+
+services:
+  ui:
+    build: .
+    entrypoint: ["streamlit", "run", "streamlit_app/app.py"]
+    command: ["--server.address=0.0.0.0", "--server.port=8501"]
+    ports:
+      - "8501:8501"
+    environment:
+      HOME: /tmp
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
