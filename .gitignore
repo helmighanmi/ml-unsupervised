@@ -1,0 +1,31 @@
+# Path: .gitignore
+# Author: GHANMI Helmi
+# Current Role: AI Engineer
+# Past Role: Researcher in Applied Mathematics
+# Research Profile: https://www.researchgate.net/profile/Ghanmi-Helmi
+
+__pycache__/
+*.py[cod]
+*.so
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+build/
+dist/
+*.egg-info/
+.ipynb_checkpoints/
+.DS_Store
+.idea/
+.vscode/
+artifacts/
+outputs/
+models/
+*.joblib
+*.pkl

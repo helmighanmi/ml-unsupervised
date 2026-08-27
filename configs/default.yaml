@@ -1,0 +1,28 @@
+# Path: configs/default.yaml
+# Author: GHANMI Helmi
+# Current Role: AI Engineer
+# Past Role: Researcher in Applied Mathematics
+# Research Profile: https://www.researchgate.net/profile/Ghanmi-Helmi
+
+preprocessing:
+  scaler: robust
+
+clustering:
+  kmeans:
+    n_clusters: 5
+    random_state: 42
+    n_init: 10
+  hdbscan:
+    min_cluster_size: 20
+
+dimensionality_reduction:
+  pca:
+    n_components: 2
+  umap:
+    n_components: 2
+    random_state: 42
+
+anomaly_detection:
+  isolation_forest:
+    contamination: 0.1
+    random_state: 42

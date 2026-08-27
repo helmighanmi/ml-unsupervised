@@ -1,10 +1,22 @@
-version: "3.8"
+# Path: docker-compose.yml
+# Author: GHANMI Helmi
+# Current Role: AI Engineer
+# Past Role: Researcher in Applied Mathematics
+# Research Profile: https://www.researchgate.net/profile/Ghanmi-Helmi
 
 services:
-  ml-unsupervised:
+  ui:
     build: .
+    entrypoint: ["streamlit", "run", "streamlit_app/app.py"]
+    command: ["--server.address=0.0.0.0", "--server.port=8501"]
     ports:
-      - "8888:8888"
-    volumes:
-      - .:/app
-    command: jupyter notebook --ip=0.0.0.0 --allow-root --NotebookApp.token=''
+      - "8501:8501"
+    environment:
+      HOME: /tmp
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL

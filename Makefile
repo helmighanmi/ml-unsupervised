@@ -1,28 +1,44 @@
-# 🧠 ML Unsupervised Toolkit - Makefile
+# Path: Makefile
+# Author: GHANMI Helmi
+# Current Role: AI Engineer
+# Past Role: Researcher in Applied Mathematics
+# Research Profile: https://www.researchgate.net/profile/Ghanmi-Helmi
 
-IMAGE_DEV = ml-unsupervised-dev
-IMAGE_PROD = ml-unsupervised
+.PHONY: install install-all test lint format typecheck quality ci cli-help ui notebook docker-build docker-run
 
-# Build Docker images
-docker-dev:
-	docker build -t $(IMAGE_DEV) --target dev .
+install:
+	python -m pip install -e ".[dev]"
 
-docker-prod:
-	docker build -t $(IMAGE_PROD) --target prod .
+install-all:
+	python -m pip install -e ".[ui,nlp,notebooks,dev]"
 
-# Run tests inside Dev image
-test: docker-dev
-	docker run --rm $(IMAGE_DEV) pytest tests --maxfail=1 --disable-warnings -q
+test:
+	pytest --cov=ml_unsupervised --cov-report=term-missing
 
-# Run JupyterLab inside Dev image
-notebook: docker-dev
-	docker run -it -p 8888:8888 -v $(PWD):/app $(IMAGE_DEV) \
-		jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root
+lint:
+	ruff check .
 
-# Run Prod container (executes default CMD from Dockerfile)
-run-prod: docker-prod
-	docker run --rm $(IMAGE_PROD)
+format:
+	ruff format .
 
-# Run with docker-compose (optional if you have a compose.yaml)
-compose:
-	docker-compose up
+typecheck:
+	mypy src/ml_unsupervised
+
+quality: lint typecheck test
+
+ci: quality
+
+cli-help:
+	ml-unsupervised --help
+
+ui:
+	streamlit run streamlit_app/app.py
+
+notebook:
+	jupyter lab
+
+docker-build:
+	docker build -t ml-unsupervised:local .
+
+docker-run:
+	docker run --rm ml-unsupervised:local --help

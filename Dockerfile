@@ -1,51 +1,32 @@
-# ----------------------
-# Stage 1: Dev / CI (with Jupyter & pytest)
-# ----------------------
-FROM python:3.10-slim AS dev
+# Path: Dockerfile
+# Author: GHANMI Helmi
+# Current Role: AI Engineer
+# Past Role: Researcher in Applied Mathematics
+# Research Profile: https://www.researchgate.net/profile/Ghanmi-Helmi
+
+FROM python:3.11-slim AS runtime
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
 
 WORKDIR /app
 
-# Install system dependencies (needed for numpy, scipy, hdbscan, umap)
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    python3-dev \
-    libopenblas-dev \
-    liblapack-dev \
-    gfortran \
- && rm -rf /var/lib/apt/lists/*
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libgomp1 \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd --system app \
+    && useradd --system --gid app --create-home app
 
-# Install Python dependencies (requirements + dev tools)
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt pytest jupyterlab
-
-# Copy everything (for dev/testing)
-COPY . .
-
-# Run tests to validate build (only in dev/CI image)
-#RUN pytest tests --maxfail=1 --disable-warnings -q
-
-
-# ----------------------
-# Stage 2: Production (slim, no Jupyter)
-# ----------------------
-FROM python:3.10-slim AS prod
-
-WORKDIR /app
-
-# Install only runtime system dependencies
-RUN apt-get update && apt-get install -y \
-    libopenblas-dev \
-    liblapack-dev \
- && rm -rf /var/lib/apt/lists/*
-
-# Copy requirements first (leverage caching)
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy only necessary files for runtime (no tests, no notebooks)
+COPY pyproject.toml README.md LICENSE ./
 COPY src ./src
-COPY config.yaml .
-COPY README.md .
+RUN python -m pip install --upgrade pip \
+    && python -m pip install ".[ui]"
 
-# Default command: run pipelines (can be overridden)
-CMD ["python", "-m", "src.pipelines"]
+COPY configs ./configs
+COPY streamlit_app ./streamlit_app
+
+USER app
+
+ENTRYPOINT ["ml-unsupervised"]
+CMD ["--help"]
