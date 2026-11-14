@@ -10,35 +10,55 @@ Research Profile: https://www.researchgate.net/profile/Ghanmi-Helmi
 
 ## Objective
 
-The architecture separates **reusable ML behavior** from **interactive analysis and presentation**. A notebook must never be required to execute a production workflow.
+Separate **reusable ML behavior** from **interfaces and presentation**, with explicit dependency direction. A notebook must never be required to execute a production workflow.
 
-## Layers
+## Layered package layout (`src/ml_unsupervised/`)
 
-### Core package — `src/ml_unsupervised/`
+```text
+core/            # exceptions, shared validation
+data/            # loading, preprocessing
+algorithms/      # clustering, reduction, anomaly, feedback
+workflows/       # composed pipelines
+evaluation/      # metrics, diagnostics
+reporting/       # plots, markdown/html reports
+infrastructure/  # config, registry
+interfaces/      # CLI, FastAPI
+```
 
-Owns validation, preprocessing, clustering, dimensionality reduction, anomaly detection, evaluation, persistence, text-feedback embedding orchestration and the CLI.
+### Dependency rules
 
-### Presentation — `streamlit_app/`
+| Layer | May import | Must not import |
+|---|---|---|
+| `core` | stdlib, NumPy | other package layers |
+| `data` | `core` | algorithms, workflows, interfaces |
+| `algorithms` | `core` | data loaders, workflows, reporting, interfaces |
+| `evaluation` | `core`, `algorithms` | workflows, reporting, interfaces |
+| `workflows` | `core`, `data`, `algorithms`, `evaluation` | reporting, interfaces |
+| `reporting` | `core` (+ result types) | algorithms, workflows, interfaces |
+| `infrastructure` | `core` | algorithms, interfaces |
+| `interfaces` | all layers | — |
 
-Owns Streamlit widgets and rendering. It imports the same core classes available to every other consumer.
+Rules are guarded by `tests/test_architecture.py`.
 
-### Analysis — `notebooks/`
+## Consumers
 
-Owns exploration, plots, comparison and interpretation. Notebooks may assemble package APIs but should not define reusable production classes, model-loading logic or duplicated algorithms.
+- **`streamlit_app/`** — thin presentation client.
+- **`notebooks/`** — analysis only (no production-owned logic).
+- **CLI/API** — adapters in `interfaces/`.
 
-### Verification — `tests/`
+## Compatibility
 
-Unit tests validate individual contracts. Integration tests validate cross-module behavior such as CLI output, persistence and notebook/package boundaries.
+Legacy flat module paths (e.g. `ml_unsupervised.clustering`, `ml_unsupervised.pipelines`) are retained as **re-export shims** for incremental migration (see ADR `004-layered-package-layout.md`). Prefer canonical layered imports for new code.
 
 ## Important boundaries
 
-- `ClusteringEngine` owns estimator construction and prediction capability checks.
-- `DimensionalityReducer` owns reduction estimator construction.
-- `AnomalyDetector` normalizes detector output to `0=inlier`, `1=outlier`.
-- `ClusteringPipeline` composes preprocessing, optional reduction and clustering.
-- `TextFeedbackClusterer` owns embedding-model loading and text-to-cluster orchestration.
-- `ClusteringEvaluator` handles noise-aware internal clustering metrics.
+- `algorithms.clustering.ClusteringEngine` owns estimator construction and prediction capability checks.
+- `algorithms.reduction.DimensionalityReducer` owns reduction estimators.
+- `algorithms.anomaly.AnomalyDetector` normalizes output to `0=inlier`, `1=outlier`.
+- `workflows.pipeline.ClusteringPipeline` composes preprocessing, optional reduction, clustering, and evaluation.
+- `algorithms.feedback.TextFeedbackClusterer` owns embedding-model loading and orchestration.
+- `evaluation.metrics.ClusteringEvaluator` handles noise-aware internal clustering metrics.
 
 ## Inference capability
 
-Not every unsupervised estimator supports inference for unseen observations. The public API exposes this difference explicitly. A fitted KMeans pipeline can predict new samples. Standard DBSCAN, AgglomerativeClustering and SpectralClustering cannot use the same `predict()` contract, so the package raises a clear error.
+Not every unsupervised estimator supports inference for unseen observations. The public API exposes this explicitly: estimators without out-of-sample `predict()` raise a clear error instead of returning misleading results.

@@ -4,6 +4,6 @@
 # Past Role: Researcher in Applied Mathematics
 # Research Profile: https://www.researchgate.net/profile/Ghanmi-Helmi
 
-from .cli import main
+from .interfaces.cli import main
 
 raise SystemExit(main())

@@ -109,7 +109,7 @@ dev = [
 # ---------------------------------------------------------------------------
 
 [project.scripts]
-ml-unsupervised = "ml_unsupervised.cli:main"
+ml-unsupervised = "ml_unsupervised.interfaces.cli:main"
 
 
 # ---------------------------------------------------------------------------
