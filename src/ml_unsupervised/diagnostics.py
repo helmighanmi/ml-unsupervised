@@ -197,3 +197,58 @@ def anomaly_summary(
         {"feature": k, "mean_abs_z": float(v)} for k, v in outlier_z.head(top_n).items()
     ]
     return summary
+
+
+def hopkins_statistic(X: ArrayLike, *, sample_size: int | None = None, random_state: int = 42) -> float:
+    """Estimate cluster tendency with the Hopkins statistic.
+
+    Values closer to 1 suggest clusterable structure; ~0.5 suggests uniform/random;
+    closer to 0 suggests regularly spaced data. Uses a simple uniform-reference
+    approximation over the feature bounding box.
+    """
+    values = as_2d_float_array(X)
+    n, d = values.shape
+    if n < 2:
+        raise ValueError("Hopkins statistic requires at least two samples.")
+    m = sample_size or min(max(int(0.1 * n), 10), n - 1)
+    m = max(1, min(m, n - 1))
+    rng = np.random.default_rng(random_state)
+    sample_idx = rng.choice(n, size=m, replace=False)
+    mins = values.min(axis=0)
+    maxs = values.max(axis=0)
+    span = np.where((maxs - mins) == 0, 1.0, maxs - mins)
+    uniform = mins + rng.random((m, d)) * span
+
+    # Nearest-neighbor distances (excluding identical sampled point when applicable)
+    from sklearn.neighbors import NearestNeighbors
+
+    nn_data = NearestNeighbors(n_neighbors=2).fit(values)
+    w_dist, _ = nn_data.kneighbors(values[sample_idx], n_neighbors=2)
+    w = w_dist[:, 1] if w_dist.shape[1] > 1 else w_dist[:, 0]
+    nn_uniform = NearestNeighbors(n_neighbors=1).fit(values)
+    u = nn_uniform.kneighbors(uniform, n_neighbors=1)[0][:, 0]
+    denom = float(np.sum(u) + np.sum(w))
+    if denom == 0:
+        return 0.5
+    return float(np.sum(u) / denom)
+
+
+def embedding_trustworthiness(
+    X: ArrayLike,
+    X_embedded: ArrayLike,
+    *,
+    n_neighbors: int = 5,
+    metric: str = "euclidean",
+) -> float:
+    """Compute trustworthiness of a low-dimensional embedding.
+
+    Uses sklearn's implementation: 1 is perfect preservation of local neighborhoods.
+    """
+    from sklearn.manifold import trustworthiness
+
+    X_arr = as_2d_float_array(X)
+    X_emb = as_2d_float_array(X_embedded)
+    if len(X_arr) != len(X_emb):
+        raise ValueError("X and X_embedded must have the same number of samples.")
+    k = min(max(int(n_neighbors), 1), max(len(X_arr) - 1, 1))
+    return float(trustworthiness(X_arr, X_emb, n_neighbors=k, metric=metric))

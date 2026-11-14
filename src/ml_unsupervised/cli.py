@@ -22,6 +22,7 @@ from .diagnostics import anomaly_summary, cluster_profile
 from .dimensionality_reduction import DimensionalityReducer
 from .exceptions import MLUnsupervisedError
 from .pipelines import ClusteringPipeline
+from .reporting import write_report
 from .utils import parse_key_value_params
 
 LOGGER = logging.getLogger(__name__)
@@ -77,6 +78,18 @@ def build_parser() -> argparse.ArgumentParser:
 
     demo = subparsers.add_parser("demo", help="Run a quick end-to-end demo on the bundled sample dataset.")
     demo.add_argument("--output", type=Path, help="Optional CSV path for labeled demo output.")
+
+    report = subparsers.add_parser(
+        "report", help="Generate a Markdown/HTML report from summary/profile artifacts."
+    )
+    report.add_argument("--summary", type=Path, required=True, help="JSON summary file.")
+    report.add_argument("--profile", type=Path, help="Optional CSV profile/diagnostics table.")
+    report.add_argument("--title", default="Unsupervised analysis report", help="Report title.")
+    report.add_argument("--output", type=Path, required=True, help="Output report path (.md or .html).")
+
+    serve = subparsers.add_parser("serve", help="Run the FastAPI service (requires 'api' extra).")
+    serve.add_argument("--host", default="127.0.0.1")
+    serve.add_argument("--port", type=int, default=8000)
     return parser
 
 
@@ -184,6 +197,32 @@ def _run_demo(args: argparse.Namespace) -> dict[str, object]:
     return summary
 
 
+def _run_report(args: argparse.Namespace) -> dict[str, object]:
+    summary = json.loads(Path(args.summary).read_text(encoding="utf-8"))
+    if not isinstance(summary, dict):
+        raise ValueError("Summary JSON must contain an object.")
+    profile = pd.read_csv(args.profile) if args.profile else None
+    notes = [
+        "Unsupervised metrics are diagnostics, not ground truth; validate with domain context.",
+        "Results depend on preprocessing, parameters, data quality, and library versions.",
+    ]
+    out = write_report(args.output, title=args.title, summary=summary, profile=profile, notes=notes)
+    return {"report": str(out), "format": out.suffix.lstrip(".") or "md"}
+
+
+def _run_serve(args: argparse.Namespace) -> dict[str, object]:
+    try:
+        import uvicorn
+
+        from .api import create_app
+    except ImportError as exc:
+        raise MLUnsupervisedError("Serve command requires the 'api' extra: pip install -e '.[api]'") from exc
+    app = create_app()
+    # Run blocking server; CLI returns when server stops.
+    uvicorn.run(app, host=args.host, port=args.port)
+    return {"status": "stopped"}
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
@@ -197,8 +236,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             summary = _run_anomaly(args)
         elif args.command == "reduce":
             summary = _run_reduce(args)
-        else:
+        elif args.command == "demo":
             summary = _run_demo(args)
+        elif args.command == "report":
+            summary = _run_report(args)
+        else:
+            summary = _run_serve(args)
     except (FileNotFoundError, MLUnsupervisedError, ValueError, TypeError) as exc:
         parser.error(str(exc))
     print(json.dumps(summary, indent=2, sort_keys=True))
