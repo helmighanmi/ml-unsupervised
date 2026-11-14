@@ -31,7 +31,21 @@ python -m pip install -e ".[notebooks]"
 ruff check .
 ruff format --check .
 mypy src/ml_unsupervised
-pytest
+pytest --cov=ml_unsupervised --cov-report=term-missing
+```
+
+Or run:
+
+```bash
+make quality
+```
+
+## Useful commands
+
+```bash
+make demo        # quick end-to-end demo on bundled sample data
+make benchmark   # run reproducible method comparison benchmarks
+make ui          # launch Streamlit app
 ```
 
 ## Adding an algorithm
@@ -39,5 +53,5 @@ pytest
 1. Add estimator construction to the appropriate engine/reducer.
 2. Document whether it supports out-of-sample inference.
 3. Add deterministic unit coverage when the estimator supports a random state.
-4. Add or update a notebook only as an analysis/demo consumer.
+4. Add/update docs (`algorithm-selection.md`, metrics notes) and a notebook/demo if useful.
 5. Keep optional heavy imports lazy when possible.

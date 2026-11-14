@@ -82,9 +82,7 @@ class ClusteringEvaluator:
             raise ValueError("labels must be a 1-D array.")
 
         if len(labels_array) != len(values):
-            raise ValueError(
-                "labels must contain exactly one label per input sample."
-            )
+            raise ValueError("labels must contain exactly one label per input sample.")
 
         ignored_noise_samples = 0
 
@@ -100,30 +98,18 @@ class ClusteringEvaluator:
         n_clusters = len(unique_labels)
 
         if n_samples < 2:
-            raise ValueError(
-                "Clustering metrics require at least two evaluated samples."
-            )
+            raise ValueError("Clustering metrics require at least two evaluated samples.")
 
         if n_clusters < 2:
-            raise ValueError(
-                "Clustering metrics require at least two non-empty clusters."
-            )
+            raise ValueError("Clustering metrics require at least two non-empty clusters.")
 
         if n_clusters >= n_samples:
-            raise ValueError(
-                "Clustering metrics require fewer clusters than samples."
-            )
+            raise ValueError("Clustering metrics require fewer clusters than samples.")
 
         return ClusteringMetrics(
-            silhouette=float(
-                silhouette_score(values, labels_array)
-            ),
-            davies_bouldin=float(
-                davies_bouldin_score(values, labels_array)
-            ),
-            calinski_harabasz=float(
-                calinski_harabasz_score(values, labels_array)
-            ),
+            silhouette=float(silhouette_score(values, labels_array)),
+            davies_bouldin=float(davies_bouldin_score(values, labels_array)),
+            calinski_harabasz=float(calinski_harabasz_score(values, labels_array)),
             evaluated_samples=int(n_samples),
             n_clusters=int(n_clusters),
             ignored_noise_samples=ignored_noise_samples,

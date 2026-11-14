@@ -8,374 +8,169 @@ Research Profile: https://www.researchgate.net/profile/Ghanmi-Helmi
 
 # ML Unsupervised Toolkit
 
-A production-oriented Python toolkit for **clustering, dimensionality reduction, anomaly detection, text-feedback clustering, evaluation, and reusable unsupervised-learning pipelines**.
+[![CI](https://github.com/helmighanmi/ml-unsupervised/actions/workflows/ci.yml/badge.svg)](https://github.com/helmighanmi/ml-unsupervised/actions/workflows/ci.yml)
+[![Security](https://github.com/helmighanmi/ml-unsupervised/actions/workflows/security.yml/badge.svg)](https://github.com/helmighanmi/ml-unsupervised/actions/workflows/security.yml)
+[![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12-blue.svg)](pyproject.toml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-The repository is intentionally **package first**:
+A production-oriented Python toolkit for **clustering, dimensionality reduction, anomaly detection, and text-feedback clustering** — with a package-first design, explicit algorithm contracts, tests, CI, and reproducible CLI/Docker workflows.
 
-> Production logic lives in `src/ml_unsupervised/`. Notebooks and Streamlit are clients of that package, never the owner of model logic.
+> **Package first:** production logic lives in `src/ml_unsupervised/`. Notebooks and Streamlit are thin clients of that package, never the owner of model logic.
 
-That makes the same implementation usable from a Python service, scheduled job, CLI, Streamlit application, automated test, Docker container, or notebook.
+![Streamlit interface](images/web-interface-streamlit.PNG)
 
-## Engineering scope
-
-- Clustering: KMeans, DBSCAN, HDBSCAN, Agglomerative, GMM, Spectral, Birch
-- Dimensionality reduction: PCA, t-SNE, UMAP, Kernel PCA, ICA, NMF, Factor Analysis
-- Anomaly detection: Isolation Forest, One-Class SVM, Local Outlier Factor
-- Text feedback: SentenceTransformer embeddings + reusable clustering service
-- Noise-aware clustering evaluation
-- Stateful preprocessing and clustering pipelines
-- Model/pipeline persistence with Joblib
-- CLI execution without Jupyter
-- Thin Streamlit presentation layer
-- Unit/integration tests, linting, type checking, CI, security audit, CodeQL, Dependabot
-- Dockerized CLI/UI runtime
-
-## Architecture
-
-```text
-CSV/XLSX / NumPy / service input
-              │
-              ▼
-      ml_unsupervised.data
-              │
-              ▼
-   FeaturePreprocessor
-              │
-        optional reduction
-              │
-              ▼
-      ClusteringEngine ─────► ClusteringEvaluator
-              │
-              ▼
-        labels / model
-
-Other production APIs:
-
-AnomalyDetector
-TextFeedbackClusterer
-DimensionalityReducer
-ClusteringPipeline
-
-Consumers:
-├── CLI
-├── Streamlit
-├── Python applications
-├── tests
-└── notebooks (analysis only)
-```
-
-See [`docs/architecture.md`](docs/architecture.md) for design details.
-
-## Python version
-
-The reference runtime is **Python 3.11**. CI validates Python 3.11 and 3.12.
-
-## Quickstart
-
-### Linux / macOS / GitHub Codespaces
+## Start here (under 5 minutes)
 
 ```bash
 python3.11 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install -e ".[dev]"
-pytest
+
+ml-unsupervised demo
 ```
 
-### Windows PowerShell
+The demo runs a reproducible clustering pipeline on the bundled sample dataset and prints a JSON summary (rows, clusters, metrics). You can also run `make demo`.
 
-```powershell
-py -3.11 -m venv .venv
-.venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
-python -m pip install -e ".[dev]"
-pytest
+## What’s included
+
+| Capability | Algorithms / components | Primary API |
+|---|---|---|
+| **Clustering** | KMeans, DBSCAN, HDBSCAN, Agglomerative, GMM, Spectral, Birch | `ClusteringEngine`, `ClusteringPipeline` |
+| **Dimensionality reduction** | PCA, t-SNE, UMAP, Kernel PCA, ICA, NMF, Factor Analysis | `DimensionalityReducer` |
+| **Anomaly detection** | Isolation Forest, One-Class SVM, Local Outlier Factor | `AnomalyDetector` (`0=inlier, 1=outlier`) |
+| **Text feedback** | SentenceTransformer embeddings + clustering | `TextFeedbackClusterer` |
+| **Evaluation** | Silhouette, Davies–Bouldin, Calinski–Harabasz (noise-aware) | `ClusteringEvaluator` |
+| **Workflows** | Preprocessing, optional reduction, fit/predict, persistence | `ClusteringPipeline`, CLI |
+
+Optional extras: `.[ui]` (Streamlit/XLSX), `.[heavy]` (HDBSCAN/UMAP), `.[nlp]` (SentenceTransformers), `.[notebooks]`, `.[dev]`.
+
+## Which API should I use?
+
+| Use case | Recommended |
+|---|---|
+| End-to-end tabular clustering (scale → reduce → cluster → metrics → save) | `ClusteringPipeline` |
+| Direct model control / algorithm comparison | `ClusteringEngine`, `DimensionalityReducer`, `AnomalyDetector` |
+| Text feedback themes | `TextFeedbackClusterer` |
+| Quick scripts / notebook migration | `run_*` helpers in `clustering`, `dimensionality_reduction`, `anomaly_detection` |
+| No-code execution | `ml-unsupervised` CLI |
+
+**Inference note:** only estimators that support out-of-sample prediction (e.g. KMeans/GMM/Birch) expose `predict()`; others (e.g. DBSCAN, Agglomerative) raise a clear error — by design.
+
+## Architecture
+
+```mermaid
+flowchart LR
+    A[CSV/XLSX or arrays] --> B[data.load_tabular_dataset]
+    B --> C[FeaturePreprocessor]
+    C --> D{DimensionalityReducer?}
+    D -->|optional| E[embedding]
+    D -->|no| F[features]
+    E --> G[ClusteringEngine / Pipeline]
+    F --> G
+    G --> H[labels + metrics]
+    G --> I[ClusteringEvaluator]
+    J[AnomalyDetector] --> K[0=inlier, 1=outlier]
+    L[TextFeedbackClusterer] --> M[embeddings + clusters]
+
+    subgraph Consumers
+      CLI
+      Streamlit
+      Python
+      Tests
+      Notebooks
+    end
+    H --> Consumers
+    K --> Consumers
+    M --> Consumers
 ```
 
-Install additional interfaces only when needed:
+See [docs/architecture.md](docs/architecture.md) for boundaries and design decisions.
 
-```bash
-# Streamlit + Excel input
-python -m pip install -e ".[ui]"
+## Quick examples
 
-# SentenceTransformer feedback clustering
-python -m pip install -e ".[nlp]"
-
-# Jupyter analysis environment
-python -m pip install -e ".[notebooks]"
-```
-
-## Use the Python classes directly
-
-### End-to-end clustering
+### Python (recommended)
 
 ```python
 from sklearn.datasets import load_iris
 from ml_unsupervised import ClusteringPipeline
 
 X = load_iris().data
-
 pipeline = ClusteringPipeline(
     scaler="standard",
     reduction_method="pca",
     n_components=2,
     clustering_method="kmeans",
-    clustering_params={
-        "n_clusters": 3,
-        "random_state": 42,
-        "n_init": 10,
-    },
+    clustering_params={"n_clusters": 3, "random_state": 42, "n_init": 10},
 )
-
 result = pipeline.fit_predict(X)
-print(result.labels)
 print(result.metrics.to_dict() if result.metrics else None)
-
-# Persist a fitted inference-capable workflow.
 pipeline.save("artifacts/iris.joblib")
 ```
 
-Load it later:
-
-```python
-from ml_unsupervised import ClusteringPipeline
-
-pipeline = ClusteringPipeline.load("artifacts/iris.joblib")
-labels = pipeline.predict(new_samples)
-```
-
-Out-of-sample `predict()` is intentionally available only for algorithms whose estimator supports it. For example, KMeans supports prediction; Agglomerative clustering does not.
-
-### Direct clustering engine
-
-```python
-from ml_unsupervised import ClusteringEngine
-
-labels = ClusteringEngine(
-    "kmeans",
-    {"n_clusters": 5, "random_state": 42},
-).fit_predict(X)
-```
-
-### Dimensionality reduction
-
-```python
-from ml_unsupervised import DimensionalityReducer
-
-embedding = DimensionalityReducer(
-    "pca",
-    n_components=2,
-).fit_transform(X)
-```
-
-### Anomaly detection
-
-```python
-from ml_unsupervised import AnomalyDetector
-
-result = AnomalyDetector(
-    "isolation_forest",
-    {"contamination": 0.05, "random_state": 42},
-).fit_predict(X)
-
-# Public contract: 0 = inlier, 1 = outlier
-print(result.labels)
-print(result.outlier_ratio)
-```
-
-### Text-feedback clustering
-
-```python
-from ml_unsupervised.feedback import TextFeedbackClusterer
-
-feedback = [
-    "Checkout is slow",
-    "Payment fails on mobile",
-    "The dashboard looks great",
-]
-
-service = TextFeedbackClusterer(
-    clustering_method="kmeans",
-    clustering_params={"n_clusters": 2, "random_state": 42},
-)
-result = service.fit_predict(feedback)
-```
-
-The SentenceTransformer model is loaded lazily. Importing the core package does not download an embedding model.
-
-## Convenience functions
-
-Small scripts can still use function-style APIs:
-
-```python
-from ml_unsupervised.clustering import run_kmeans
-from ml_unsupervised.dimensionality_reduction import run_pca
-
-X_pca, pca = run_pca(X, n_components=2)
-labels, centers = run_kmeans(X_pca, n_clusters=3)
-```
-
-These wrappers make migration from older notebooks straightforward while the class APIs remain the recommended production interface.
-
-## Run without a notebook: CLI
-
-After installation:
-
-```bash
-ml-unsupervised --help
-```
-
-Cluster a CSV:
-
-```bash
-ml-unsupervised cluster data/customers.csv \
-  --features age annual_income spending_score \
-  --method kmeans \
-  --scaler standard \
-  --reduce pca \
-  --components 2 \
-  --param n_clusters=5 \
-  --param random_state=42 \
-  --output outputs/customers_clustered.csv \
-  --model-out artifacts/customer_pipeline.joblib
-```
-
-Detect anomalies:
-
-```bash
-ml-unsupervised anomaly data/customers.csv \
-  --features age annual_income spending_score \
-  --method isolation_forest \
-  --param contamination=0.05 \
-  --output outputs/anomalies.csv
-```
-
-Create a low-dimensional embedding:
-
-```bash
-ml-unsupervised reduce data/customers.csv \
-  --features age annual_income spending_score \
-  --method pca \
-  --components 2 \
-  --output outputs/embedding.csv
-```
-
-The repository includes a deterministic sample dataset:
+### CLI
 
 ```bash
 ml-unsupervised cluster data/sample_customers.csv \
   --features age annual_income spending_score \
-  --method kmeans \
-  --param n_clusters=5 \
-  --output outputs/sample_clusters.csv
+  --method kmeans --param n_clusters=3 --param random_state=42 \
+  --reduce pca --components 2 \
+  --output outputs/clustered.csv
+
+ml-unsupervised anomaly data/sample_customers.csv \
+  --features age annual_income spending_score \
+  --method isolation_forest --param contamination=0.05 \
+  --output outputs/anomalies.csv
 ```
 
-## Notebooks: analysis, not production runtime
-
-The notebooks intentionally contain exploration, visualization and interpretation only. They import the same package used by scripts and applications.
-
-Start with:
-
-```text
-notebooks/00_package_quickstart.ipynb
-```
-
-Then explore:
-
-```text
-01_clustering_basics.ipynb
-02_dimensionality_reduction.ipynb
-03_clustering_with_dim_reduction.ipynb
-04_pipeline_and_inference.ipynb
-05_realworld_customer_clustering.ipynb
-06_using_config.ipynb
-07_llm_feedback_clustering.ipynb
-08_anomaly_detection.ipynb
-09_additional_methods.ipynb
-```
-
-Run Jupyter only when you want analysis:
-
-```bash
-python -m pip install -e ".[notebooks]"
-jupyter lab
-```
-
-## Streamlit
-
-The Streamlit app delegates model work to `ml_unsupervised`; it does not redefine the algorithms.
+### Streamlit
 
 ```bash
 python -m pip install -e ".[ui]"
 streamlit run streamlit_app/app.py
+# or: make ui
 ```
+
+## Documentation
+
+- [Tutorial](docs/tutorial.md) — from data to interpreted results
+- [Algorithm selection](docs/algorithm-selection.md) — which method and when
+- [Metrics & interpretation](docs/metrics.md) — how to read results and caveats
+- [Architecture](docs/architecture.md) — layers and boundaries
+- [Development](docs/development.md) — local setup and checks
+- [Testing](docs/testing.md) — strategy and quality gates
+- [Runbook](docs/runbook.md) — common operational issues
+- [Migration](docs/migration.md) — from the original project layout
+- [Model card](docs/model-card.md) — intended use, limitations, ethics
+- [Glossary](docs/glossary.md)
 
 ## Docker
 
-Build:
-
 ```bash
-docker build -t ml-unsupervised:local .
-```
-
-The container defaults to the CLI:
-
-```bash
+docker build --target runtime -t ml-unsupervised:local .   # CLI image
 docker run --rm ml-unsupervised:local --help
+docker compose up --build                                   # UI (Streamlit) on :8501
 ```
 
-Run the UI:
+## Quality
 
 ```bash
-docker compose up --build
+make quality   # ruff check, ruff format --check, mypy, pytest+coverage
 ```
 
-Then open port `8501` in your environment.
-
-## Quality gates
-
-```bash
-make lint
-make typecheck
-make test
-make quality
-```
-
-CI runs quality checks on Python 3.11 and 3.12 and builds the Docker image. A separate workflow runs dependency auditing and CodeQL.
+CI runs on Python 3.11/3.12 with coverage reporting, Docker build, dependency audit, and CodeQL (see `.github/workflows/`).
 
 ## Repository layout
 
 ```text
-.
-├── .github/
-│   └── workflows/
-├── configs/
-├── data/
-├── docs/
-│   └── decisions/
-├── examples/
-├── notebooks/            # exploration and analysis only
-├── src/
-│   └── ml_unsupervised/  # production code
-├── streamlit_app/        # presentation layer
-├── tests/
-│   ├── unit/
-│   └── integration/
-├── Dockerfile
-├── docker-compose.yml
-├── Makefile
-└── pyproject.toml
+src/ml_unsupervised/   # production package
+streamlit_app/         # thin UI client
+notebooks/             # analysis only
+tests/{unit,integration}
+docs/                  # guides, ADRs, model card
+configs/ data/ examples/ benchmarks/
 ```
-
-## Design principles
-
-1. **One implementation of each ML behavior.** UI and notebooks call package code.
-2. **Explicit algorithm limitations.** Unsupported inference fails clearly instead of pretending all clustering methods can predict new samples.
-3. **Reproducible defaults.** Randomized algorithms use explicit random states where supported.
-4. **Optional heavyweight features stay lazy.** Importing the package does not download NLP models.
-5. **Evaluation matches unsupervised reality.** Density-clustering noise can be excluded from internal metrics.
-6. **Portable execution.** The same package runs from Python, CLI, Docker, Streamlit, tests and notebooks.
 
 ## License
 
-The project source is licensed under the MIT License. Third-party dependencies retain their respective licenses.
+MIT — see [LICENSE](LICENSE). Third-party dependencies retain their respective licenses. See [CITATION.cff](CITATION.cff) for citation metadata.

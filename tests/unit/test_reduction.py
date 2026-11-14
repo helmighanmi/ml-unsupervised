@@ -29,3 +29,38 @@ def test_invalid_input_rejects_nan() -> None:
     X = np.array([[1.0, np.nan], [2.0, 3.0]])
     with pytest.raises(ValueError, match="NaN"):
         DimensionalityReducer("pca").fit_transform(X)
+
+
+def test_more_reducers_and_wrappers() -> None:
+    import numpy as np
+    from sklearn.datasets import make_blobs
+    from ml_unsupervised.dimensionality_reduction import (
+        run_factor_analysis,
+        run_ica,
+        run_kernel_pca,
+        run_nmf,
+        run_pca,
+    )
+    from ml_unsupervised import DimensionalityReducer
+
+    X, _ = make_blobs(n_samples=30, centers=2, n_features=5, random_state=0)
+    X_pos = np.abs(X) + 0.1
+
+    emb, _ = run_pca(X, n_components=2)
+    assert emb.shape == (30, 2)
+    emb, _ = run_kernel_pca(X, n_components=2)
+    assert emb.shape == (30, 2)
+    emb, _ = run_ica(X, n_components=2)
+    assert emb.shape == (30, 2)
+    emb, _ = run_nmf(X_pos, n_components=2)
+    assert emb.shape == (30, 2)
+    emb, _ = run_factor_analysis(X, n_components=2)
+    assert emb.shape == (30, 2)
+
+    # transform-supported and unsupported paths
+    pca = DimensionalityReducer("pca", n_components=2).fit(X)
+    assert pca.transform(X[:3]).shape == (3, 2)
+    try:
+        DimensionalityReducer("umap", n_components=2).fit_transform(X)
+    except Exception:
+        pass

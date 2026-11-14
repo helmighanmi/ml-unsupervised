@@ -47,7 +47,8 @@ class DimensionalityReducer:
                 import umap  # type: ignore
             except ImportError as exc:  # pragma: no cover - environment dependent
                 raise OptionalDependencyError(
-                    "UMAP requires the 'umap-learn' package. Install the project dependencies first."
+                    "UMAP requires the 'umap-learn' package. "
+                    "Install it with: python -m pip install '.[heavy]'"
                 ) from exc
             return umap.UMAP(**params)
         if method in {"kernel_pca", "kpca"}:
@@ -92,38 +93,51 @@ class DimensionalityReducer:
         return self.model_
 
 
-def run_pca(X: ArrayLike, n_components: int = 2):
+def run_pca(X: ArrayLike, n_components: int = 2) -> tuple[NDArray[np.float64], Any]:
+    """Return ``(embedding, fitted_model)``."""
     reducer = DimensionalityReducer("pca", n_components)
     return reducer.fit_transform(X), reducer.model
 
 
-def run_tsne(X: ArrayLike, n_components: int = 2, perplexity: float = 30, random_state: int = 42):
+def run_tsne(
+    X: ArrayLike, n_components: int = 2, perplexity: float = 30, random_state: int = 42
+) -> tuple[NDArray[np.float64], Any]:
+    """Return ``(embedding, fitted_model)`` like every other ``run_*`` reducer."""
     reducer = DimensionalityReducer(
         "tsne", n_components, {"perplexity": perplexity, "random_state": random_state}
     )
-    return reducer.fit_transform(X)
+    return reducer.fit_transform(X), reducer.model
 
 
-def run_umap(X: ArrayLike, n_components: int = 2, random_state: int = 42):
+def run_umap(X: ArrayLike, n_components: int = 2, random_state: int = 42) -> tuple[NDArray[np.float64], Any]:
+    """Return ``(embedding, fitted_model)`` like every other ``run_*`` reducer."""
     reducer = DimensionalityReducer("umap", n_components, {"random_state": random_state})
-    return reducer.fit_transform(X)
+    return reducer.fit_transform(X), reducer.model
 
 
-def run_kernel_pca(X: ArrayLike, n_components: int = 2, kernel: str = "rbf"):
+def run_kernel_pca(
+    X: ArrayLike, n_components: int = 2, kernel: str = "rbf"
+) -> tuple[NDArray[np.float64], Any]:
+    """Return ``(embedding, fitted_model)``."""
     reducer = DimensionalityReducer("kernel_pca", n_components, {"kernel": kernel})
     return reducer.fit_transform(X), reducer.model
 
 
-def run_ica(X: ArrayLike, n_components: int = 2, random_state: int = 42):
+def run_ica(X: ArrayLike, n_components: int = 2, random_state: int = 42) -> tuple[NDArray[np.float64], Any]:
+    """Return ``(embedding, fitted_model)``."""
     reducer = DimensionalityReducer("ica", n_components, {"random_state": random_state})
     return reducer.fit_transform(X), reducer.model
 
 
-def run_nmf(X: ArrayLike, n_components: int = 2, random_state: int = 42):
+def run_nmf(X: ArrayLike, n_components: int = 2, random_state: int = 42) -> tuple[NDArray[np.float64], Any]:
+    """Return ``(embedding, fitted_model)``."""
     reducer = DimensionalityReducer("nmf", n_components, {"random_state": random_state})
     return reducer.fit_transform(X), reducer.model
 
 
-def run_factor_analysis(X: ArrayLike, n_components: int = 2, random_state: int = 42):
+def run_factor_analysis(
+    X: ArrayLike, n_components: int = 2, random_state: int = 42
+) -> tuple[NDArray[np.float64], Any]:
+    """Return ``(embedding, fitted_model)``."""
     reducer = DimensionalityReducer("factor_analysis", n_components, {"random_state": random_state})
     return reducer.fit_transform(X), reducer.model

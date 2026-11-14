@@ -16,9 +16,7 @@ def test_anomaly_detector_normalizes_labels_and_scores() -> None:
     outliers = np.array([[9.0, 9.0], [-9.0, -9.0]])
     X = np.vstack([normal, outliers])
 
-    result = AnomalyDetector(
-        "isolation_forest", {"contamination": 0.05, "random_state": 42}
-    ).fit_predict(X)
+    result = AnomalyDetector("isolation_forest", {"contamination": 0.05, "random_state": 42}).fit_predict(X)
 
     assert set(np.unique(result.labels)).issubset({0, 1})
     assert result.scores is not None
@@ -29,3 +27,14 @@ def test_legacy_anomaly_helper_keeps_minus_one_contract() -> None:
     X = np.arange(40, dtype=float).reshape(20, 2)
     labels, _ = run_isolation_forest(X, contamination=0.1)
     assert set(np.unique(labels)).issubset({-1, 1})
+
+
+def test_anomaly_wrappers_and_lof_svm() -> None:
+    import numpy as np
+    from ml_unsupervised.anomaly_detection import run_lof, run_oneclass_svm
+
+    X = np.vstack([np.random.default_rng(0).normal(size=(40, 2)), [[8.0, 8.0]]])
+    labels, model = run_oneclass_svm(X[:40], nu=0.1)
+    assert labels.shape == (40,) and model is not None
+    labels2, model2 = run_lof(X[:40], n_neighbors=5, contamination=0.1)
+    assert labels2.shape == (40,) and model2 is not None

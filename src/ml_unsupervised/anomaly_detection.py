@@ -94,7 +94,10 @@ def _legacy_labels(result: AnomalyResult) -> NDArray[np.int_]:
     return np.where(result.labels == 1, -1, 1).astype(int)
 
 
-def run_isolation_forest(X: ArrayLike, contamination: float = 0.1, random_state: int = 42):
+def run_isolation_forest(
+    X: ArrayLike, contamination: float = 0.1, random_state: int = 42
+) -> tuple[NDArray[np.int_], Any]:
+    """Return ``(legacy -1/1 labels, fitted_model)``."""
     detector = AnomalyDetector(
         "isolation_forest", {"contamination": contamination, "random_state": random_state}
     )
@@ -102,13 +105,17 @@ def run_isolation_forest(X: ArrayLike, contamination: float = 0.1, random_state:
     return _legacy_labels(result), detector.model
 
 
-def run_oneclass_svm(X: ArrayLike, nu: float = 0.1, kernel: str = "rbf", gamma: str = "scale"):
+def run_oneclass_svm(
+    X: ArrayLike, nu: float = 0.1, kernel: str = "rbf", gamma: str = "scale"
+) -> tuple[NDArray[np.int_], Any]:
+    """Return ``(legacy -1/1 labels, fitted_model)``."""
     detector = AnomalyDetector("one_class_svm", {"nu": nu, "kernel": kernel, "gamma": gamma})
     result = detector.fit_predict(X)
     return _legacy_labels(result), detector.model
 
 
-def run_lof(X: ArrayLike, n_neighbors: int = 20, contamination: float = 0.1):
+def run_lof(X: ArrayLike, n_neighbors: int = 20, contamination: float = 0.1) -> tuple[NDArray[np.int_], Any]:
+    """Return ``(legacy -1/1 labels, fitted_model)``."""
     detector = AnomalyDetector("lof", {"n_neighbors": n_neighbors, "contamination": contamination})
     result = detector.fit_predict(X)
     return _legacy_labels(result), detector.model

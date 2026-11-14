@@ -15,6 +15,8 @@ import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
 
+from .exceptions import OptionalDependencyError
+
 
 @dataclass(frozen=True, slots=True)
 class TabularDataset:
@@ -43,7 +45,18 @@ def load_tabular_dataset(
     if suffix not in SUPPORTED_TABULAR_SUFFIXES:
         raise ValueError(f"Unsupported dataset format {suffix!r}; use CSV or XLSX.")
 
-    frame = pd.read_csv(source) if suffix == ".csv" else pd.read_excel(source)
+    if suffix == ".csv":
+        frame = pd.read_csv(source)
+    else:
+        # XLSX support requires the optional 'openpyxl' dependency.
+        # The package lazily imports it, so we check early and give a clear message.
+        try:
+            import openpyxl  # noqa: F401
+        except ImportError as exc:
+            raise OptionalDependencyError(
+                "XLSX support requires the 'openpyxl' package. Install it with: python -m pip install '.[ui]'"
+            ) from exc
+        frame = pd.read_excel(source)
     if frame.empty:
         raise ValueError("Dataset is empty.")
 
