@@ -1,4 +1,4 @@
-# Path: src/ml_unsupervised/evaluation.py
+# Path: src/ml_unsupervised/evaluation/metrics.py
 # Author: GHANMI Helmi
 # Current Role: AI Engineer
 # Past Role: Researcher in Applied Mathematics
@@ -18,7 +18,7 @@ from sklearn.metrics import (
     silhouette_score,
 )
 
-from .utils import as_2d_float_array
+from ..core.validation import as_2d_float_array
 
 
 MetricValue = float | int
