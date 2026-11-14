@@ -40,10 +40,11 @@ The demo runs a reproducible clustering pipeline on the bundled sample dataset a
 | **Dimensionality reduction** | PCA, t-SNE, UMAP, Kernel PCA, ICA, NMF, Factor Analysis | `DimensionalityReducer` |
 | **Anomaly detection** | Isolation Forest, One-Class SVM, Local Outlier Factor | `AnomalyDetector` (`0=inlier, 1=outlier`) |
 | **Text feedback** | SentenceTransformer embeddings + clustering | `TextFeedbackClusterer` |
-| **Evaluation** | Silhouette, Davies–Bouldin, Calinski–Harabasz (noise-aware) | `ClusteringEvaluator` |
-| **Workflows** | Preprocessing, optional reduction, fit/predict, persistence | `ClusteringPipeline`, CLI |
+| **Evaluation & diagnostics** | Silhouette, Davies–Bouldin, Calinski–Harabasz (noise-aware), profiles, `select_k`, method comparison, bootstrap stability, Hopkins statistic, trustworthiness | `ClusteringEvaluator`, `ml_unsupervised.diagnostics` |
+| **Reporting & registry** | Markdown/HTML report generation, lightweight filesystem model registry | `ml_unsupervised.reporting`, `ml_unsupervised.registry` |
+| **Workflows & service** | Preprocessing, optional reduction, fit/predict, persistence, CLI, minimal FastAPI service | `ClusteringPipeline`, CLI, `ml_unsupervised.api` |
 
-Optional extras: `.[ui]` (Streamlit/XLSX), `.[heavy]` (HDBSCAN/UMAP), `.[nlp]` (SentenceTransformers), `.[notebooks]`, `.[dev]`.
+Optional extras: `.[ui]` (Streamlit/XLSX), `.[heavy]` (HDBSCAN/UMAP), `.[nlp]` (SentenceTransformers), `.[api]` (FastAPI service), `.[notebooks]`, `.[dev]`.
 
 ## Which API should I use?
 
@@ -115,12 +116,19 @@ ml-unsupervised cluster data/sample_customers.csv \
   --features age annual_income spending_score \
   --method kmeans --param n_clusters=3 --param random_state=42 \
   --reduce pca --components 2 \
-  --output outputs/clustered.csv
+  --output outputs/clustered.csv \
+  --profile-out outputs/profile.csv
 
 ml-unsupervised anomaly data/sample_customers.csv \
   --features age annual_income spending_score \
   --method isolation_forest --param contamination=0.05 \
   --output outputs/anomalies.csv
+
+# Generate a report from a summary/profile artifact
+ml-unsupervised report --summary outputs/summary.json --profile outputs/profile.csv --output outputs/report.html
+
+# Optional: run the FastAPI service (requires .[api])
+ml-unsupervised serve --host 127.0.0.1 --port 8000
 ```
 
 ### Streamlit
