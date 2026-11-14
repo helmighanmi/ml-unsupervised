@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+message: "If you use this toolkit in your work, please cite it."
+title: "ML Unsupervised Toolkit"
+type: software
+authors:
+  - family-names: "Ghanmi"
+    given-names: "Helmi"
+version: "1.0.0"
+license: MIT
+repository-code: "https://github.com/helmighanmi/ml-unsupervised"
+abstract: "A production-oriented Python toolkit for clustering, dimensionality reduction, anomaly detection, and text-feedback clustering."

@@ -11,12 +11,13 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 from numpy.typing import ArrayLike
 
 from .utils import as_2d_float_array
 
 
-def plot_clusters(X: ArrayLike, labels: ArrayLike, title: str = "Clustering"):
+def plot_clusters(X: ArrayLike, labels: ArrayLike, title: str = "Clustering") -> go.Figure:
     values = as_2d_float_array(X)
     if values.shape[1] != 2:
         raise ValueError("plot_clusters requires exactly two dimensions.")
@@ -28,7 +29,9 @@ def plot_clusters(X: ArrayLike, labels: ArrayLike, title: str = "Clustering"):
     return px.scatter(frame, x="x", y="y", color="cluster", title=title, opacity=0.8)
 
 
-def plot_embedding(X: ArrayLike, labels: ArrayLike | None = None, title: str = "Dimensionality Reduction"):
+def plot_embedding(
+    X: ArrayLike, labels: ArrayLike | None = None, title: str = "Dimensionality Reduction"
+) -> go.Figure:
     values = as_2d_float_array(X)
     if values.shape[1] not in {2, 3}:
         raise ValueError("Embedding must have 2 or 3 dimensions.")

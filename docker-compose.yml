@@ -6,7 +6,9 @@
 
 services:
   ui:
-    build: .
+    build:
+      context: .
+      target: ui
     entrypoint: ["streamlit", "run", "streamlit_app/app.py"]
     command: ["--server.address=0.0.0.0", "--server.port=8501"]
     ports:

@@ -64,7 +64,8 @@ class ClusteringEngine:
                 import hdbscan  # type: ignore
             except ImportError as exc:  # pragma: no cover - environment dependent
                 raise OptionalDependencyError(
-                    "HDBSCAN requires the 'hdbscan' package. Install the project dependencies first."
+                    "HDBSCAN requires the 'hdbscan' package. "
+                    "Install it with: python -m pip install '.[heavy]'"
                 ) from exc
             return hdbscan.HDBSCAN(**params)
         if method == "agglomerative":
@@ -126,7 +127,12 @@ class ClusteringEngine:
 
 
 # Convenience functions retained for simple scripts and notebook migration.
-def run_kmeans(X: ArrayLike, n_clusters: int = 3, random_state: int = 42):
+# Contract note: helpers whose estimator supports inference (KMeans, GMM,
+# Spectral, Birch) return ``(labels, fitted_model)``. Density/graph helpers
+# (DBSCAN, HDBSCAN, Agglomerative) intentionally return labels only, matching
+# scikit-learn semantics for estimators without out-of-sample prediction.
+def run_kmeans(X: ArrayLike, n_clusters: int = 3, random_state: int = 42) -> tuple[NDArray[np.int_], Any]:
+    """Return ``(labels, cluster_centers)``."""
     engine = ClusteringEngine(
         "kmeans", {"n_clusters": n_clusters, "random_state": random_state, "n_init": 10}
     )
@@ -134,25 +140,30 @@ def run_kmeans(X: ArrayLike, n_clusters: int = 3, random_state: int = 42):
     return labels, np.asarray(engine.model.cluster_centers_)
 
 
-def run_dbscan(X: ArrayLike, eps: float = 0.5, min_samples: int = 5):
+def run_dbscan(X: ArrayLike, eps: float = 0.5, min_samples: int = 5) -> NDArray[np.int_]:
+    """Return cluster labels only; DBSCAN supports no out-of-sample model."""
     return ClusteringEngine("dbscan", {"eps": eps, "min_samples": min_samples}).fit_predict(X)
 
 
-def run_hdbscan(X: ArrayLike, min_cluster_size: int = 10):
+def run_hdbscan(X: ArrayLike, min_cluster_size: int = 10) -> NDArray[np.int_]:
+    """Return cluster labels only; HDBSCAN supports no out-of-sample model."""
     return ClusteringEngine("hdbscan", {"min_cluster_size": min_cluster_size}).fit_predict(X)
 
 
-def run_agglomerative(X: ArrayLike, n_clusters: int = 3):
+def run_agglomerative(X: ArrayLike, n_clusters: int = 3) -> NDArray[np.int_]:
+    """Return cluster labels only; Agglomerative clustering supports no inference."""
     return ClusteringEngine("agglomerative", {"n_clusters": n_clusters}).fit_predict(X)
 
 
-def run_gmm(X: ArrayLike, n_components: int = 3, random_state: int = 42):
+def run_gmm(X: ArrayLike, n_components: int = 3, random_state: int = 42) -> tuple[NDArray[np.int_], Any]:
+    """Return ``(labels, fitted_model)``."""
     engine = ClusteringEngine("gmm", {"n_components": n_components, "random_state": random_state})
     labels = engine.fit_predict(X)
     return labels, engine.model
 
 
-def run_spectral(X: ArrayLike, n_clusters: int = 3, random_state: int = 42):
+def run_spectral(X: ArrayLike, n_clusters: int = 3, random_state: int = 42) -> tuple[NDArray[np.int_], Any]:
+    """Return ``(labels, fitted_model)``."""
     engine = ClusteringEngine(
         "spectral", {"n_clusters": n_clusters, "affinity": "nearest_neighbors", "random_state": random_state}
     )
@@ -160,7 +171,8 @@ def run_spectral(X: ArrayLike, n_clusters: int = 3, random_state: int = 42):
     return labels, engine.model
 
 
-def run_birch(X: ArrayLike, n_clusters: int = 3):
+def run_birch(X: ArrayLike, n_clusters: int = 3) -> tuple[NDArray[np.int_], Any]:
+    """Return ``(labels, fitted_model)``."""
     engine = ClusteringEngine("birch", {"n_clusters": n_clusters})
     labels = engine.fit_predict(X)
     return labels, engine.model

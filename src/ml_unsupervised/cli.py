@@ -18,7 +18,9 @@ import pandas as pd
 
 from .anomaly_detection import AnomalyDetector
 from .data import load_tabular_dataset
+from .diagnostics import anomaly_summary, cluster_profile
 from .dimensionality_reduction import DimensionalityReducer
+from .exceptions import MLUnsupervisedError
 from .pipelines import ClusteringPipeline
 from .utils import parse_key_value_params
 
@@ -27,7 +29,9 @@ LOGGER = logging.getLogger(__name__)
 
 def _add_data_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("input", type=Path, help="Input CSV or XLSX file.")
-    parser.add_argument("--features", nargs="+", help="Explicit feature columns. Defaults to all numeric columns.")
+    parser.add_argument(
+        "--features", nargs="+", help="Explicit feature columns. Defaults to all numeric columns."
+    )
     parser.add_argument("--output", type=Path, required=True, help="Output CSV path.")
 
 
@@ -39,25 +43,40 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--verbose", action="store_true", help="Enable informational logging.")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    cluster = subparsers.add_parser("cluster", help="Scale, optionally reduce, and cluster a tabular dataset.")
+    cluster = subparsers.add_parser(
+        "cluster", help="Scale, optionally reduce, and cluster a tabular dataset."
+    )
     _add_data_args(cluster)
     cluster.add_argument("--method", default="kmeans")
     cluster.add_argument("--scaler", default="robust", choices=["robust", "standard", "minmax"])
     cluster.add_argument("--reduce", dest="reduction_method", default=None)
     cluster.add_argument("--components", type=int, default=2)
-    cluster.add_argument("--param", action="append", help="Clustering parameter as key=value; may be repeated.")
-    cluster.add_argument("--model-out", type=Path, help="Optional joblib path for a fitted inference-capable pipeline.")
+    cluster.add_argument(
+        "--param", action="append", help="Clustering parameter as key=value; may be repeated."
+    )
+    cluster.add_argument(
+        "--model-out", type=Path, help="Optional joblib path for a fitted inference-capable pipeline."
+    )
+    cluster.add_argument(
+        "--profile-out", type=Path, help="Optional CSV path for per-cluster feature profile."
+    )
 
     anomaly = subparsers.add_parser("anomaly", help="Run anomaly detection on a tabular dataset.")
     _add_data_args(anomaly)
     anomaly.add_argument("--method", default="isolation_forest")
     anomaly.add_argument("--param", action="append", help="Detector parameter as key=value; may be repeated.")
+    anomaly.add_argument(
+        "--summary-out", type=Path, help="Optional JSON path for anomaly summary diagnostics."
+    )
 
     reduce = subparsers.add_parser("reduce", help="Generate a lower-dimensional embedding.")
     _add_data_args(reduce)
     reduce.add_argument("--method", default="pca")
     reduce.add_argument("--components", type=int, default=2)
     reduce.add_argument("--param", action="append", help="Reducer parameter as key=value; may be repeated.")
+
+    demo = subparsers.add_parser("demo", help="Run a quick end-to-end demo on the bundled sample dataset.")
+    demo.add_argument("--output", type=Path, help="Optional CSV path for labeled demo output.")
     return parser
 
 
@@ -81,6 +100,12 @@ def _run_cluster(args: argparse.Namespace) -> dict[str, object]:
     output_frame = dataset.frame.copy()
     output_frame["cluster"] = result.labels
     _write_output(output_frame, args.output)
+    profile_path = None
+    if args.profile_out:
+        profile = cluster_profile(dataset.feature_frame, result.labels)
+        args.profile_out.parent.mkdir(parents=True, exist_ok=True)
+        profile.to_csv(args.profile_out, index=False)
+        profile_path = str(args.profile_out)
     if args.model_out:
         pipeline.save(args.model_out)
     return {
@@ -89,6 +114,7 @@ def _run_cluster(args: argparse.Namespace) -> dict[str, object]:
         "metrics": result.metrics.to_dict() if result.metrics else None,
         "output": str(args.output),
         "model": str(args.model_out) if args.model_out else None,
+        "profile_output": profile_path,
     }
 
 
@@ -101,7 +127,18 @@ def _run_anomaly(args: argparse.Namespace) -> dict[str, object]:
     if result.scores is not None:
         output_frame["anomaly_score"] = result.scores
     _write_output(output_frame, args.output)
-    return {"rows": len(output_frame), "outlier_ratio": result.outlier_ratio, "output": str(args.output)}
+    summary_path = None
+    if args.summary_out:
+        summary = anomaly_summary(dataset.feature_frame, result.labels)
+        args.summary_out.parent.mkdir(parents=True, exist_ok=True)
+        args.summary_out.write_text(json.dumps(summary, indent=2, sort_keys=True), encoding="utf-8")
+        summary_path = str(args.summary_out)
+    return {
+        "rows": len(output_frame),
+        "outlier_ratio": result.outlier_ratio,
+        "output": str(args.output),
+        "summary_output": summary_path,
+    }
 
 
 def _run_reduce(args: argparse.Namespace) -> dict[str, object]:
@@ -115,18 +152,54 @@ def _run_reduce(args: argparse.Namespace) -> dict[str, object]:
     return {"rows": len(output_frame), "components": embedding.shape[1], "output": str(args.output)}
 
 
+def _run_demo(args: argparse.Namespace) -> dict[str, object]:
+    """Run a fast, reproducible clustering demo on bundled sample data."""
+    sample = Path(__file__).resolve().parents[2] / "data" / "sample_customers.csv"
+    if not sample.exists():
+        # Fallback for installed environments where repo data may not be packaged.
+        sample = Path.cwd() / "data" / "sample_customers.csv"
+    dataset = load_tabular_dataset(sample, feature_columns=["age", "annual_income", "spending_score"])
+    pipeline = ClusteringPipeline(
+        scaler="robust",
+        reduction_method="pca",
+        n_components=2,
+        clustering_method="kmeans",
+        clustering_params={"n_clusters": 3, "random_state": 42, "n_init": 10},
+    )
+    result = pipeline.fit_predict(dataset.X)
+    summary: dict[str, object] = {
+        "demo": "customer clustering",
+        "rows": len(dataset.frame),
+        "clusters": int(len(set(result.labels.tolist()))),
+        "metrics": result.metrics.to_dict() if result.metrics else None,
+        "features": dataset.feature_frame.columns.tolist(),
+    }
+    if args.output:
+        output_frame = dataset.frame.copy()
+        output_frame["cluster"] = result.labels
+        for index in range(result.transformed.shape[1]):
+            output_frame[f"component_{index + 1}"] = result.transformed[:, index]
+        _write_output(output_frame, args.output)
+        summary["output"] = str(args.output)
+    return summary
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
-    logging.basicConfig(level=logging.INFO if args.verbose else logging.WARNING, format="%(levelname)s %(message)s")
+    logging.basicConfig(
+        level=logging.INFO if args.verbose else logging.WARNING, format="%(levelname)s %(message)s"
+    )
     try:
         if args.command == "cluster":
             summary = _run_cluster(args)
         elif args.command == "anomaly":
             summary = _run_anomaly(args)
-        else:
+        elif args.command == "reduce":
             summary = _run_reduce(args)
-    except (FileNotFoundError, ValueError, TypeError) as exc:
+        else:
+            summary = _run_demo(args)
+    except (FileNotFoundError, MLUnsupervisedError, ValueError, TypeError) as exc:
         parser.error(str(exc))
     print(json.dumps(summary, indent=2, sort_keys=True))
     return 0

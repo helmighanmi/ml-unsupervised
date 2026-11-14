@@ -40,3 +40,31 @@ def test_legacy_kmeans_helper_is_preserved() -> None:
     labels, centers = run_kmeans(X, n_clusters=2)
     assert labels.shape == (40,)
     assert centers.shape == (2, 2)
+
+
+def test_clustering_convenience_wrappers() -> None:
+    X, _ = make_blobs(n_samples=40, centers=2, random_state=1)
+    from ml_unsupervised.clustering import (
+        run_agglomerative,
+        run_birch,
+        run_dbscan,
+        run_gmm,
+        run_hdbscan,
+        run_spectral,
+    )
+
+    labels_db = run_dbscan(X, eps=1.5, min_samples=3)
+    assert labels_db.shape == (40,)
+    labels_ag = run_agglomerative(X, n_clusters=2)
+    assert labels_ag.shape == (40,)
+    labels_gmm, model_gmm = run_gmm(X, n_components=2, random_state=1)
+    assert labels_gmm.shape == (40,) and model_gmm is not None
+    labels_sp, model_sp = run_spectral(X, n_clusters=2, random_state=1)
+    assert labels_sp.shape == (40,) and model_sp is not None
+    labels_b, model_b = run_birch(X, n_clusters=2)
+    assert labels_b.shape == (40,) and model_b is not None
+    try:
+        run_hdbscan(X, min_cluster_size=5)
+    except Exception:
+        # hdbscan is optional; either works or raises OptionalDependencyError
+        pass

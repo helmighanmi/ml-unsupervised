@@ -82,10 +82,14 @@ class TextFeedbackClusterer:
         n_components: int = 2,
     ) -> FeedbackClusteringResult:
         embeddings = self.embed(texts)
-        labels = ClusteringEngine(self.clustering_method, dict(self.clustering_params)).fit_predict(embeddings)
+        labels = ClusteringEngine(self.clustering_method, dict(self.clustering_params)).fit_predict(
+            embeddings
+        )
         projection = None
         if projection_method:
-            projection = DimensionalityReducer(projection_method, n_components=n_components).fit_transform(embeddings)
+            projection = DimensionalityReducer(projection_method, n_components=n_components).fit_transform(
+                embeddings
+            )
         return FeedbackClusteringResult(
             texts=list(texts), embeddings=embeddings, labels=labels, projection=projection
         )

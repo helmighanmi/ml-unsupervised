@@ -21,12 +21,26 @@ RUN apt-get update \
 COPY pyproject.toml README.md LICENSE ./
 COPY src ./src
 RUN python -m pip install --upgrade pip \
-    && python -m pip install ".[ui]"
+    && python -m pip install "."
 
 COPY configs ./configs
+
+USER app
+
+# Default target: CLI-only production image (ml-unsupervised entrypoint).
+ENTRYPOINT ["ml-unsupervised"]
+CMD ["--help"]
+
+# UI target: adds Streamlit and XLSX support for docker-compose / `--target ui`.
+FROM runtime AS ui
+
+USER root
+
+RUN python -m pip install ".[ui]"
+
 COPY streamlit_app ./streamlit_app
 
 USER app
 
-ENTRYPOINT ["ml-unsupervised"]
-CMD ["--help"]
+ENTRYPOINT ["streamlit", "run", "streamlit_app/app.py"]
+CMD ["--server.address=0.0.0.0", "--server.port=8501"]
