@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+from importlib.resources import as_file, files
 from pathlib import Path
 from typing import Sequence
 
@@ -141,6 +142,9 @@ def _run_cluster(args: argparse.Namespace) -> dict[str, object]:
         n_components=args.components,
     )
     result = pipeline.fit_predict(dataset.X)
+    if args.model_out:
+        # Check both the reducer and clusterer before writing any outputs.
+        pipeline.predict(dataset.X[:1])
     output_frame = dataset.frame.copy()
     output_frame["cluster"] = result.labels
     _write_output(output_frame, args.output)
@@ -154,7 +158,7 @@ def _run_cluster(args: argparse.Namespace) -> dict[str, object]:
         pipeline.save(args.model_out)
     return {
         "rows": len(output_frame),
-        "clusters": int(len(set(result.labels.tolist()))),
+        "clusters": len(set(result.labels.tolist()) - {-1}),
         "metrics": result.metrics.to_dict() if result.metrics else None,
         "output": str(args.output),
         "model": str(args.model_out) if args.model_out else None,
@@ -198,11 +202,8 @@ def _run_reduce(args: argparse.Namespace) -> dict[str, object]:
 
 def _run_demo(args: argparse.Namespace) -> dict[str, object]:
     """Run a fast, reproducible clustering demo on bundled sample data."""
-    sample = Path(__file__).resolve().parents[2] / "data" / "sample_customers.csv"
-    if not sample.exists():
-        # Fallback for installed environments where repo data may not be packaged.
-        sample = Path.cwd() / "data" / "sample_customers.csv"
-    dataset = load_tabular_dataset(sample, feature_columns=["age", "annual_income", "spending_score"])
+    with as_file(files("ml_unsupervised.data").joinpath("sample_customers.csv")) as sample:
+        dataset = load_tabular_dataset(sample, feature_columns=["age", "annual_income", "spending_score"])
     pipeline = ClusteringPipeline(
         scaler="robust",
         reduction_method="pca",

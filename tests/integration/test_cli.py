@@ -81,7 +81,7 @@ def test_anomaly_and_reduce_cli(tmp_path: Path) -> None:
     assert "component_1" in red.columns and "component_2" in red.columns
 
 
-def test_demo_cli_runs() -> None:
-    # Uses bundled repo sample data; should succeed in project environment.
+def test_demo_cli_runs(tmp_path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
     exit_code = main(["demo"])
     assert exit_code == 0
