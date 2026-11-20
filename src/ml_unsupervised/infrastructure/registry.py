@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import json
+import re
 import shutil
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
@@ -57,8 +58,13 @@ class ModelRegistry:
         src = Path(artifact)
         if not src.exists():
             raise FileNotFoundError(f"Artifact not found: {src}")
-        ver = version or datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
+        ver = version if version is not None else datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
+        for component in (name, ver):
+            if not re.fullmatch(r"[\w-][\w.-]*", component):
+                raise ValueError("Registry name and version must be safe single path components.")
         dest_dir = self.root / name / ver
+        if not (dest_dir / src.name).resolve().is_relative_to(self.root.resolve()):
+            raise ValueError("Artifact destination must stay within the registry.")
         dest_dir.mkdir(parents=True, exist_ok=True)
         dest = dest_dir / src.name
         if copy_artifact:

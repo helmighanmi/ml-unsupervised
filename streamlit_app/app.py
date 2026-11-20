@@ -116,7 +116,7 @@ def _clustering_tab(frame: pd.DataFrame, features: list[str]) -> None:
         out["cluster"] = result.labels
         cols = st.columns(3)
         cols[0].metric("Rows", len(out))
-        cols[1].metric("Clusters", len(set(result.labels.tolist())))
+        cols[1].metric("Clusters", len(set(result.labels.tolist()) - {-1}))
         noise = float(np.mean(result.labels == -1))
         cols[2].metric("Noise ratio", f"{noise:.1%}")
         if result.metrics:

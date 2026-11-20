@@ -123,7 +123,7 @@ package-dir = { "" = "src" }
 where = ["src"]
 
 [tool.setuptools.package-data]
-ml_unsupervised = ["py.typed"]
+ml_unsupervised = ["py.typed", "data/sample_customers.csv"]
 
 
 # ---------------------------------------------------------------------------
